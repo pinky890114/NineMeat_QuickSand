@@ -100,8 +100,18 @@ export const uploadImage = async (file: File): Promise<string> => {
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Firebase Storage upload failed:", error);
-    throw new Error("圖片上傳失敗，請檢查 Firebase Storage 權限設定或網路連線。");
+    
+    // 檢查常見錯誤並轉換為易讀訊息
+    if (error.code === 'storage/unauthorized') {
+        throw new Error("權限不足：請檢查 Firebase Console 的 Storage Rules 是否允許寫入 (請暫時設為 allow read, write: if true;)。");
+    } else if (error.code === 'storage/canceled') {
+        throw new Error("上傳已取消。");
+    } else if (error.code === 'storage/unknown') {
+        throw new Error("發生未知錯誤，請檢查 Firebase 設定。");
+    }
+    
+    throw new Error(error.message || "上傳過程發生錯誤，請檢查網路連線或稍後再試。");
   }
 };

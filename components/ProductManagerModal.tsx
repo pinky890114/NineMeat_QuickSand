@@ -77,11 +77,16 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
         try {
             const imageUrl = await uploadImage(file);
             handleProductChange('img', imageUrl);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Image upload failed:", error);
-            alert("圖片上傳失敗，請重試。");
+            // 顯示具體的錯誤訊息給使用者
+            alert(`圖片上傳失敗：${error.message}`);
         } finally {
             setIsUploading(false);
+            // 重置 input value，允許重複選擇同一個檔案
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     }
   };
@@ -225,9 +230,9 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                             </div>
                             
                             <input 
-                                type="url" 
+                                type="text" 
                                 placeholder="貼上圖片網址..."
-                                value={editingProduct.img && editingProduct.img.startsWith('http') ? editingProduct.img : ''}
+                                value={editingProduct.img || ''}
                                 onChange={e => handleProductChange('img', e.target.value)}
                                 className="w-full bg-stone-100 border-stone-200 rounded-lg px-3 py-2 text-sm" 
                             />
