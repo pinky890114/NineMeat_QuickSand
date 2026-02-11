@@ -30,7 +30,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
     if (!Object.keys(productOptions).includes(activeCategory)) {
         setActiveCategory(Object.keys(productOptions)[0] || '');
     }
-  }, [productOptions, activeCategory]);
+  }, [productOptions, isOpen]); // Also update when modal opens
 
   if (!isOpen) return null;
 
@@ -69,48 +69,57 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0] && editingProduct) {
-          const file = e.target.files[0];
-          const reader = new FileReader();
-          reader.onload = (event) => {
-              const img = new Image();
-              img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  const MAX_WIDTH = 400;
-                  const MAX_HEIGHT = 400;
-                  let width = img.width;
-                  let height = img.height;
+    if (e.target.files && e.target.files[0] && editingProduct) {
+        const file = e.target.files[0];
+        const objectUrl = URL.createObjectURL(file);
 
-                  if (width > height) {
-                      if (width > MAX_WIDTH) {
-                          height *= MAX_WIDTH / width;
-                          width = MAX_WIDTH;
-                      }
-                  } else {
-                      if (height > MAX_HEIGHT) {
-                          width *= MAX_HEIGHT / height;
-                          height = MAX_HEIGHT;
-                      }
-                  }
-                  canvas.width = width;
-                  canvas.height = height;
-                  const ctx = canvas.getContext('2d');
-                  ctx?.drawImage(img, 0, 0, width, height);
-                  const dataUrl = canvas.toDataURL(file.type, 0.8); // Compress to 80% quality
-                  handleProductChange('img', dataUrl);
-              };
-              img.src = event.target?.result as string;
-          };
-          reader.readAsDataURL(file);
-      }
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const MAX_HEIGHT = 400;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL(file.type, 0.8);
+                handleProductChange('img', dataUrl);
+            }
+            URL.revokeObjectURL(objectUrl);
+        };
+        img.onerror = () => {
+            console.error("Failed to load image from object URL for processing.");
+            URL.revokeObjectURL(objectUrl);
+        };
+        img.src = objectUrl;
+    }
   };
 
   const handleSaveProduct = () => {
     if (!editingProduct) return;
     const newOptions = { ...internalOptions };
-    const categoryProducts = [...newOptions[activeCategory]];
+    const categoryProducts = [...(newOptions[activeCategory] || [])];
     
     if (isEditingNew) {
+        if (categoryProducts.some(p => p.name === editingProduct.name)) {
+            alert(`品項名稱 "${editingProduct.name}" 已存在，請使用不同名稱。`);
+            return;
+        }
         categoryProducts.push(editingProduct);
     } else {
         const index = categoryProducts.findIndex(p => p.name === editingProduct.name);
@@ -121,6 +130,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
     
     newOptions[activeCategory] = categoryProducts;
     setInternalOptions(newOptions);
+    onSave(newOptions); // Auto-save changes to parent state
     setEditingProduct(null);
     setIsEditingNew(false);
   };
@@ -135,6 +145,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
           const newOptions = { ...internalOptions };
           newOptions[activeCategory] = newOptions[activeCategory].filter(p => p.name !== productName);
           setInternalOptions(newOptions);
+          onSave(newOptions); // Auto-save changes
       }
   };
 
