@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductOptions, Product, Addon } from '../types';
-import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit } from 'lucide-react';
+import { uploadImage } from '../services/imageUploadService';
+import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle } from 'lucide-react';
 
 interface ProductManagerModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   const [activeCategory, setActiveCategory] = useState<string>(Object.keys(productOptions)[0]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditingNew, setIsEditingNew] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -68,45 +70,19 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
       }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && editingProduct) {
         const file = e.target.files[0];
-        const objectUrl = URL.createObjectURL(file);
-
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 400;
-            const MAX_HEIGHT = 400;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-            } else {
-                if (height > MAX_HEIGHT) {
-                    width *= MAX_HEIGHT / height;
-                    height = MAX_HEIGHT;
-                }
-            }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL(file.type, 0.8);
-                handleProductChange('img', dataUrl);
-            }
-            URL.revokeObjectURL(objectUrl);
-        };
-        img.onerror = () => {
-            console.error("Failed to load image from object URL for processing.");
-            URL.revokeObjectURL(objectUrl);
-        };
-        img.src = objectUrl;
+        setIsUploading(true);
+        try {
+            const imageUrl = await uploadImage(file);
+            handleProductChange('img', imageUrl);
+        } catch (error) {
+            console.error("Image upload failed:", error);
+            alert("圖片上傳失敗，請重試。");
+        } finally {
+            setIsUploading(false);
+        }
     }
   };
 
@@ -231,14 +207,15 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                   <div>
                     <label className="text-xs font-bold text-stone-500">圖片</label>
                     <div className="mt-1 flex items-start gap-4">
-                        <img src={editingProduct.img || 'https://via.placeholder.com/150'} alt="preview" className="w-20 h-20 object-cover rounded-md bg-stone-100 shrink-0" />
+                        <img src={editingProduct.img || 'https://via.placeholder.com/150'} alt="preview" className={`w-20 h-20 object-cover rounded-md bg-stone-100 shrink-0 transition-opacity ${isUploading ? 'opacity-50' : ''}`} />
                         <div className="w-full">
                             <button 
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()} 
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-stone-600 border border-stone-200 rounded-lg text-sm font-bold hover:bg-stone-50"
+                                disabled={isUploading}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-stone-600 border border-stone-200 rounded-lg text-sm font-bold hover:bg-stone-50 disabled:opacity-50 disabled:cursor-wait"
                             >
-                                <UploadCloud size={16} /> 上傳圖片
+                                {isUploading ? <><LoaderCircle size={16} className="animate-spin" /> 上傳中...</> : <><UploadCloud size={16} /> 上傳圖片</>}
                             </button>
                             <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
                             
