@@ -11,7 +11,7 @@ import { CommissionList } from './components/CommissionList';
 import { CommissionForm } from './components/CommissionForm';
 import { ProductManagerModal } from './components/ProductManagerModal'; // Import the new component
 import { EditCommissionModal } from './components/EditCommissionModal';
-import { Lock, Unlock, ShoppingBag, Search, GalleryHorizontal, ArrowRight } from 'lucide-react';
+import { Lock, Unlock, ShoppingBag, Search, GalleryHorizontal, ArrowRight, Facebook } from 'lucide-react';
 
 // --- HomePage Component ---
 interface HomePageProps {
@@ -38,7 +38,15 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigateToTracker, onNavigateToCo
       title: '作品集展示',
       description: '欣賞過往的流麻作品，尋找您的訂製靈感。',
       action: () => {
-        window.open('about:blank', '_blank');
+        window.open('https://www.notion.so/302e4b83246f80769a40d5c7c0c09655?source=copy_link', '_blank');
+      },
+    },
+    {
+      icon: <Facebook size={24} className="text-blue-700" />,
+      title: '聯絡方式',
+      description: '有任何問題嗎？點此透過 FB 聯繫我們。',
+      action: () => {
+        window.open('https://www.facebook.com/profile.php?id=100080679145821', '_blank');
       },
     },
   ];
@@ -65,7 +73,9 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigateToTracker, onNavigateToCo
             className="w-full bg-white border-2 border-stone-100 rounded-3xl p-6 text-left shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.1)] transition-all duration-300 group hover:-translate-y-1 flex items-center gap-6"
           >
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 ${
-              index === 0 ? 'bg-[#f0f3f0]' : index === 1 ? 'bg-sky-50' : 'bg-purple-50'
+              index === 0 ? 'bg-[#f0f3f0]' : 
+              index === 1 ? 'bg-sky-50' : 
+              index === 2 ? 'bg-purple-50' : 'bg-blue-50'
             }`}>
               {item.icon}
             </div>
