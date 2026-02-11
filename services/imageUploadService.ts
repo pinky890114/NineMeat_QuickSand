@@ -90,6 +90,8 @@ export const uploadImage = async (file: File): Promise<string> => {
     // 移除非英數字符，只留副檔名
     const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
     const fileName = `products/${timestamp}_${safeName}.jpg`; // 強制副檔名為 jpg
+    
+    // V9 Modular SDK Syntax
     const storageRef = ref(storage, fileName);
 
     // 3. 上傳檔案
@@ -103,12 +105,20 @@ export const uploadImage = async (file: File): Promise<string> => {
   } catch (error: any) {
     console.error("Upload failed:", error);
     
+    // 處理特定的 Firebase Storage 錯誤代碼
     if (error.code === 'storage/unauthorized') {
-        throw new Error("權限不足：請檢查 Firebase Console > Storage > Rules 是否已設為允許公開讀寫 (allow read, write: if request.auth != null;)。");
+        throw new Error("權限不足：請檢查 Firebase Console > Storage > Rules 是否已設為允許公開讀寫。");
     } else if (error.code === 'storage/canceled') {
         throw new Error("上傳已取消。");
-    }
+    } else if (error.code === 'storage/object-not-found') {
+        throw new Error("找不到檔案或是 Bucket 設定錯誤。");
+    } 
     
+    // 處理 CORS 或 404 造成的網路錯誤
+    if (error.message && (error.message.includes('network') || error.message.includes('CORS'))) {
+        throw new Error("連線失敗 (CORS)：這通常是因為 Storage Bucket 名稱設定錯誤，或是尚未設定 CORS 規則。");
+    }
+
     // 回傳原始錯誤訊息
     throw error;
   }

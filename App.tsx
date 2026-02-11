@@ -113,7 +113,7 @@ const App: React.FC = () => {
     if (password === 'ajo14576') {
       setIsLoggingIn(true);
       try {
-        // 執行 Firebase 匿名登入，取得上傳權限
+        // 執行 Firebase 匿名登入，取得上傳權限 (Modular SDK)
         await signInAnonymously(auth);
         setCurrentArtist('肉圓');
       } catch (error: any) {
