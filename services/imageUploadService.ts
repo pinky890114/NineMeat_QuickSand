@@ -2,25 +2,28 @@ import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /**
- * 壓縮圖片
- * 將圖片限制在最大寬度/高度，並轉換為 JPEG 格式以節省空間。
- * 目標是讓每張圖片大小控制在 100KB-200KB 以內，以加快上傳速度。
+ * 壓縮圖片 (優化版)
+ * 強制將圖片限制在 600px 以內，品質 0.6，以確保手機上傳秒速完成。
  */
 const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
-        // 優化設定：縮小尺寸至 800px，品質設為 0.6，大幅提升上傳速度
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
+        // 設定超時機制：如果 10 秒還沒壓好，就報錯 (避免無限轉圈)
+        const timeoutId = setTimeout(() => {
+            reject(new Error("圖片處理逾時，請試著換一張較小的圖片。"));
+        }, 10000);
+
+        const MAX_WIDTH = 600; // 下修尺寸以提升速度
+        const MAX_HEIGHT = 600;
         const QUALITY = 0.6; 
 
-        // 使用 createObjectURL 代替 FileReader，減少記憶體使用並提升載入速度
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);
+        
         img.src = objectUrl;
 
         img.onload = () => {
-            // 釋放記憶體
-            URL.revokeObjectURL(objectUrl);
+            clearTimeout(timeoutId); // 成功載入，取消超時
+            URL.revokeObjectURL(objectUrl); // 釋放記憶體
 
             let width = img.width;
             let height = img.height;
@@ -42,12 +45,13 @@ const compressImage = (file: File): Promise<Blob> => {
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
+            
             if (!ctx) {
-                reject(new Error("Canvas context failed"));
+                reject(new Error("瀏覽器不支援 Canvas 圖片處理"));
                 return;
             }
 
-            // 處理透明背景：若是 PNG 轉 JPEG，透明部分會變黑，這裡強制填滿白色背景
+            // 處理透明背景：填滿白色，避免 PNG 轉 JPEG 變黑
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, width, height);
 
@@ -57,61 +61,55 @@ const compressImage = (file: File): Promise<Blob> => {
                 if (blob) {
                     resolve(blob);
                 } else {
-                    reject(new Error("Canvas to Blob failed"));
+                    reject(new Error("圖片轉換失敗"));
                 }
             }, 'image/jpeg', QUALITY);
         };
 
         img.onerror = (err) => {
+            clearTimeout(timeoutId);
             URL.revokeObjectURL(objectUrl);
-            reject(err);
+            reject(new Error("無法讀取此圖片，可能是格式不支援 (如 HEIC)，請使用 JPG/PNG。"));
         };
     });
 };
 
 /**
- * 圖片上傳服務 (Firebase Storage 版本)
- * 
- * 1. 壓縮圖片
- * 2. 上傳至 Firebase Storage 的 'products' 資料夾
- * 3. 返回下載連結
+ * 圖片上傳服務
  */
 export const uploadImage = async (file: File): Promise<string> => {
   try {
-    console.log(`Processing upload for ${file.name}...`);
+    console.log(`開始上傳: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
     
     // 1. 壓縮圖片
     const compressedBlob = await compressImage(file);
-    console.log(`Original size: ${(file.size / 1024).toFixed(2)} KB`);
-    console.log(`Compressed size: ${(compressedBlob.size / 1024).toFixed(2)} KB`);
+    console.log(`壓縮後大小: ${(compressedBlob.size / 1024).toFixed(2)} KB`);
 
-    // 2. 建立檔案參考路徑 (使用時間戳記避免檔名衝突)
+    // 2. 建立檔案路徑
     const timestamp = Date.now();
-    // 移除非英數字符以確保檔名安全
+    // 移除非英數字符，只留副檔名
     const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-    const fileName = `products/${timestamp}_${safeName}`;
+    const fileName = `products/${timestamp}_${safeName}.jpg`; // 強制副檔名為 jpg
     const storageRef = ref(storage, fileName);
 
     // 3. 上傳檔案
     const snapshot = await uploadBytes(storageRef, compressedBlob);
-    console.log('Upload completed successfully');
+    console.log('Firebase Storage 上傳成功');
 
     // 4. 取得下載連結
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
 
   } catch (error: any) {
-    console.error("Firebase Storage upload failed:", error);
+    console.error("Upload failed:", error);
     
-    // 檢查常見錯誤並轉換為易讀訊息
     if (error.code === 'storage/unauthorized') {
-        throw new Error("權限不足：請檢查 Firebase Console 的 Storage Rules 是否允許寫入 (請暫時設為 allow read, write: if true;)。");
+        throw new Error("權限不足：請檢查 Firebase Storage Rules 是否已設為允許公開讀寫。");
     } else if (error.code === 'storage/canceled') {
         throw new Error("上傳已取消。");
-    } else if (error.code === 'storage/unknown') {
-        throw new Error("發生未知錯誤，請檢查 Firebase 設定。");
     }
     
-    throw new Error(error.message || "上傳過程發生錯誤，請檢查網路連線或稍後再試。");
+    // 回傳原始錯誤訊息
+    throw error;
   }
 };

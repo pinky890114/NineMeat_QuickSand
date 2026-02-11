@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductOptions, Product, Addon } from '../types';
 import { uploadImage } from '../services/imageUploadService';
-import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle } from 'lucide-react';
+import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff } from 'lucide-react';
 
 interface ProductManagerModalProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditingNew, setIsEditingNew] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,7 +33,12 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
     if (!Object.keys(productOptions).includes(activeCategory)) {
         setActiveCategory(Object.keys(productOptions)[0] || '');
     }
-  }, [productOptions, isOpen]); // Also update when modal opens
+  }, [productOptions, isOpen]);
+
+  // 重置錯誤訊息當切換產品時
+  useEffect(() => {
+    setUploadError(null);
+  }, [editingProduct]);
 
   if (!isOpen) return null;
 
@@ -71,6 +77,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     if (e.target.files && e.target.files[0] && editingProduct) {
         const file = e.target.files[0];
         setIsUploading(true);
@@ -79,11 +86,9 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
             handleProductChange('img', imageUrl);
         } catch (error: any) {
             console.error("Image upload failed:", error);
-            // 顯示具體的錯誤訊息給使用者
-            alert(`圖片上傳失敗：${error.message}`);
+            setUploadError(error.message);
         } finally {
             setIsUploading(false);
-            // 重置 input value，允許重複選擇同一個檔案
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -111,7 +116,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
     
     newOptions[activeCategory] = categoryProducts;
     setInternalOptions(newOptions);
-    onSave(newOptions); // Auto-save changes to parent state
+    onSave(newOptions); 
     setEditingProduct(null);
     setIsEditingNew(false);
   };
@@ -126,8 +131,18 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
           const newOptions = { ...internalOptions };
           newOptions[activeCategory] = newOptions[activeCategory].filter(p => p.name !== productName);
           setInternalOptions(newOptions);
-          onSave(newOptions); // Auto-save changes
+          onSave(newOptions);
       }
+  };
+  
+  // 檢查是否為看起來像網頁連結而非圖片連結 (簡易判斷)
+  const isSuspiciousLink = (url: string) => {
+      if (!url) return false;
+      // 如果是 ibb.co 且不包含圖片副檔名，通常是網頁連結
+      if (url.includes('ibb.co') && !url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+          return true;
+      }
+      return false;
   };
 
   return (
@@ -160,7 +175,16 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {internalOptions[activeCategory]?.map(p => (
                             <div key={p.name} className="bg-stone-50 rounded-2xl p-3 border-2 border-stone-100">
-                                <img src={p.img || 'https://via.placeholder.com/150'} alt={p.name} className="w-full h-24 object-cover rounded-lg mb-2" />
+                                <div className="w-full h-24 rounded-lg mb-2 bg-white overflow-hidden flex items-center justify-center border border-stone-100">
+                                    {p.img ? (
+                                        <img src={p.img} alt={p.name} className="w-full h-full object-cover" onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                            (e.target as HTMLImageElement).parentElement?.classList.add('bg-stone-200');
+                                        }} />
+                                    ) : (
+                                        <ImageOff size={24} className="text-stone-300" />
+                                    )}
+                                </div>
                                 <p className="font-bold text-sm text-stone-800">{p.name}</p>
                                 <p className="text-xs text-[#6F8F72] font-bold">{p.price > 0 ? `${p.price}元` : '自帶價'}</p>
                                 <div className="mt-2 flex gap-2">
@@ -212,7 +236,27 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                   <div>
                     <label className="text-xs font-bold text-stone-500">圖片</label>
                     <div className="mt-1 flex items-start gap-4">
-                        <img src={editingProduct.img || 'https://via.placeholder.com/150'} alt="preview" className={`w-20 h-20 object-cover rounded-md bg-stone-100 shrink-0 transition-opacity ${isUploading ? 'opacity-50' : ''}`} />
+                        <div className="w-20 h-20 bg-stone-100 rounded-md shrink-0 border border-stone-200 overflow-hidden flex items-center justify-center relative">
+                            {editingProduct.img ? (
+                                <img 
+                                    src={editingProduct.img} 
+                                    alt="preview" 
+                                    className={`w-full h-full object-cover transition-opacity ${isUploading ? 'opacity-50' : ''}`} 
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        // 顯示錯誤圖示
+                                    }}
+                                />
+                            ) : (
+                                <ImageOff size={24} className="text-stone-300" />
+                            )}
+                            {isUploading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                    <LoaderCircle className="animate-spin text-white" size={20} />
+                                </div>
+                            )}
+                        </div>
+                        
                         <div className="w-full">
                             <button 
                                 type="button"
@@ -220,22 +264,37 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                                 disabled={isUploading}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-stone-600 border border-stone-200 rounded-lg text-sm font-bold hover:bg-stone-50 disabled:opacity-50 disabled:cursor-wait"
                             >
-                                {isUploading ? <><LoaderCircle size={16} className="animate-spin" /> 上傳中...</> : <><UploadCloud size={16} /> 上傳圖片</>}
+                                {isUploading ? "處理中..." : <><UploadCloud size={16} /> 上傳圖片</>}
                             </button>
                             <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
                             
+                            {uploadError && (
+                                <p className="text-xs text-red-500 mt-1 font-bold flex items-center gap-1">
+                                    <AlertCircle size={12} /> {uploadError}
+                                </p>
+                            )}
+                            
                             <div className="text-center text-xs text-stone-400 my-2 relative">
-                                <span className="bg-white px-2 z-10 relative">或</span>
+                                <span className="bg-white px-2 z-10 relative">或 貼上圖片網址</span>
                                 <hr className="absolute top-1/2 left-0 w-full -translate-y-1/2 border-stone-200 -z-0" />
                             </div>
                             
                             <input 
                                 type="text" 
-                                placeholder="貼上圖片網址..."
+                                placeholder="例如: https://i.ibb.co/..."
                                 value={editingProduct.img || ''}
                                 onChange={e => handleProductChange('img', e.target.value)}
-                                className="w-full bg-stone-100 border-stone-200 rounded-lg px-3 py-2 text-sm" 
+                                className={`w-full bg-stone-100 border rounded-lg px-3 py-2 text-sm transition-colors ${
+                                    isSuspiciousLink(editingProduct.img || '') 
+                                    ? 'border-amber-400 focus:border-amber-500 bg-amber-50' 
+                                    : 'border-stone-200 focus:border-[#6F8F72]'
+                                }`}
                             />
+                            {isSuspiciousLink(editingProduct.img || '') && (
+                                <p className="text-xs text-amber-600 mt-1 font-bold flex items-center gap-1">
+                                    <AlertCircle size={12} /> 這看起來是網頁連結，圖片可能無法顯示。請使用右鍵「複製圖片位址」的連結 (通常結尾是 .jpg/.png)。
+                                </p>
+                            )}
                         </div>
                     </div>
                   </div>
