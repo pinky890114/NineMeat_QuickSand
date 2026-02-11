@@ -1,5 +1,4 @@
 import { storage } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /**
  * 壓縮圖片 (優化版)
@@ -90,21 +89,22 @@ export const uploadImage = async (file: File): Promise<string> => {
     // 移除非英數字符，只留副檔名
     const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
     const fileName = `products/${timestamp}_${safeName}.jpg`; // 強制副檔名為 jpg
-    const storageRef = ref(storage, fileName);
+    
+    const storageRef = storage.ref(fileName);
 
     // 3. 上傳檔案
-    const snapshot = await uploadBytes(storageRef, compressedBlob);
+    const snapshot = await storageRef.put(compressedBlob);
     console.log('Firebase Storage 上傳成功');
 
     // 4. 取得下載連結
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    const downloadURL = await snapshot.ref.getDownloadURL();
     return downloadURL;
 
   } catch (error: any) {
     console.error("Upload failed:", error);
     
     if (error.code === 'storage/unauthorized') {
-        throw new Error("權限不足：請檢查 Firebase Storage Rules 是否已設為允許公開讀寫。");
+        throw new Error("權限不足：請檢查 Firebase Console > Storage > Rules 是否已設為允許公開讀寫 (allow read, write: if request.auth != null;)。");
     } else if (error.code === 'storage/canceled') {
         throw new Error("上傳已取消。");
     }

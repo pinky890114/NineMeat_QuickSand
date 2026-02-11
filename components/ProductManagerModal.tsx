@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductOptions, Product, Addon } from '../types';
 import { uploadImage } from '../services/imageUploadService';
-import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff } from 'lucide-react';
+import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff, Save } from 'lucide-react';
 
 interface ProductManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   productOptions: ProductOptions;
-  onSave: (newOptions: ProductOptions) => void;
+  onSave: (newOptions: ProductOptions) => Promise<boolean | void>;
 }
 
 const categoryIcons = {
@@ -19,12 +19,55 @@ const categoryIcons = {
 
 const initialProduct: Product = { name: '', price: 0, img: '', addons: [] };
 
+// --- Internal Helper Component for Robust Image Loading ---
+const ProductImage = ({ src, alt, className }: { src: string, alt: string, className?: string }) => {
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Reset state when source changes
+    useEffect(() => {
+        setError(false);
+        setLoading(true);
+    }, [src]);
+
+    if (!src || error) {
+        return (
+            <div className={`flex items-center justify-center bg-stone-100 text-stone-300 border border-stone-200 ${className}`}>
+                <ImageOff size={24} />
+            </div>
+        );
+    }
+
+    return (
+        <div className={`relative overflow-hidden bg-stone-50 ${className}`}>
+             {loading && (
+                <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center z-10">
+                    <LoaderCircle className="animate-spin text-stone-300" size={20} />
+                </div>
+             )}
+             <img 
+                src={src} 
+                alt={alt} 
+                className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+                onLoad={() => setLoading(false)}
+                onError={() => { 
+                    console.warn(`Failed to load image: ${src}`);
+                    setError(true); 
+                    setLoading(false); 
+                }}
+             />
+        </div>
+    );
+};
+
+
 export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen, onClose, productOptions, onSave }) => {
   const [internalOptions, setInternalOptions] = useState<ProductOptions>(productOptions);
   const [activeCategory, setActiveCategory] = useState<string>(Object.keys(productOptions)[0]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditingNew, setIsEditingNew] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,9 +85,13 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    onSave(internalOptions);
-    onClose();
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    const success = await onSave(internalOptions);
+    setIsSaving(false);
+    if (success !== false) {
+        onClose();
+    }
   };
 
   const handleProductChange = (field: keyof Product, value: any) => {
@@ -87,6 +134,10 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
         } catch (error: any) {
             console.error("Image upload failed:", error);
             setUploadError(error.message);
+            // Hint for permission errors
+            if (error.message.includes("權限不足")) {
+                 alert("圖片上傳失敗：權限不足。\n請檢查 Firebase Storage Rules 是否允許寫入。");
+            }
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
@@ -96,7 +147,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
     }
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!editingProduct) return;
     const newOptions = { ...internalOptions };
     const categoryProducts = [...(newOptions[activeCategory] || [])];
@@ -116,9 +167,16 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
     
     newOptions[activeCategory] = categoryProducts;
     setInternalOptions(newOptions);
-    onSave(newOptions); 
-    setEditingProduct(null);
-    setIsEditingNew(false);
+    
+    // Save to Firestore immediately
+    setIsSaving(true);
+    const success = await onSave(newOptions);
+    setIsSaving(false);
+    
+    if (success !== false) {
+        setEditingProduct(null);
+        setIsEditingNew(false);
+    }
   };
   
   const handleAddNewProduct = () => {
@@ -126,12 +184,14 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
       setEditingProduct({...initialProduct});
   };
 
-  const handleDeleteProduct = (productName: string) => {
+  const handleDeleteProduct = async (productName: string) => {
       if (window.confirm(`確定要刪除 "${productName}" 嗎？此操作無法復原。`)) {
           const newOptions = { ...internalOptions };
           newOptions[activeCategory] = newOptions[activeCategory].filter(p => p.name !== productName);
           setInternalOptions(newOptions);
-          onSave(newOptions);
+          setIsSaving(true);
+          await onSave(newOptions);
+          setIsSaving(false);
       }
   };
   
@@ -175,15 +235,12 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {internalOptions[activeCategory]?.map(p => (
                             <div key={p.name} className="bg-stone-50 rounded-2xl p-3 border-2 border-stone-100">
-                                <div className="w-full h-24 rounded-lg mb-2 bg-white overflow-hidden flex items-center justify-center border border-stone-100">
-                                    {p.img ? (
-                                        <img src={p.img} alt={p.name} className="w-full h-full object-cover" onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                            (e.target as HTMLImageElement).parentElement?.classList.add('bg-stone-200');
-                                        }} />
-                                    ) : (
-                                        <ImageOff size={24} className="text-stone-300" />
-                                    )}
+                                <div className="w-full h-24 rounded-lg mb-2">
+                                    <ProductImage 
+                                        src={p.img} 
+                                        alt={p.name} 
+                                        className="w-full h-full rounded-lg"
+                                    />
                                 </div>
                                 <p className="font-bold text-sm text-stone-800">{p.name}</p>
                                 <p className="text-xs text-[#6F8F72] font-bold">{p.price > 0 ? `${p.price}元` : '自帶價'}</p>
@@ -198,14 +255,18 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
             </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-stone-100 flex justify-end shrink-0">
-            <button onClick={handleSave} className="bg-[#bcc9bc] hover:bg-[#aab5aa] text-[#2d2d2d] font-bold py-3 px-8 rounded-full text-sm">儲存並關閉</button>
+        <div className="mt-6 pt-4 border-t border-stone-100 flex justify-end shrink-0 gap-3">
+            <button onClick={onClose} className="px-6 py-3 rounded-full text-stone-500 font-bold hover:bg-stone-100 text-sm">關閉</button>
+            <button onClick={handleSaveAll} disabled={isSaving} className="bg-[#bcc9bc] hover:bg-[#aab5aa] text-[#2d2d2d] font-bold py-3 px-8 rounded-full text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                {isSaving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />}
+                {isSaving ? '儲存中...' : '儲存全部'}
+            </button>
         </div>
       </div>
       
       {/* Editing Form Modal */}
       {editingProduct && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditingProduct(null)}>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !isSaving && setEditingProduct(null)}>
               <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-4 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
                 <div className="max-h-[80vh] overflow-y-auto pr-4">
                   <h4 className="font-bold text-lg mb-4">{isEditingNew ? '新增品項' : '編輯品項'}</h4>
@@ -236,22 +297,14 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                   <div>
                     <label className="text-xs font-bold text-stone-500">圖片</label>
                     <div className="mt-1 flex items-start gap-4">
-                        <div className="w-20 h-20 bg-stone-100 rounded-md shrink-0 border border-stone-200 overflow-hidden flex items-center justify-center relative">
-                            {editingProduct.img ? (
-                                <img 
-                                    src={editingProduct.img} 
-                                    alt="preview" 
-                                    className={`w-full h-full object-cover transition-opacity ${isUploading ? 'opacity-50' : ''}`} 
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                        // 顯示錯誤圖示
-                                    }}
-                                />
-                            ) : (
-                                <ImageOff size={24} className="text-stone-300" />
-                            )}
+                        <div className="w-20 h-20 bg-stone-100 rounded-md shrink-0 border border-stone-200 overflow-hidden relative">
+                             <ProductImage 
+                                src={editingProduct.img} 
+                                alt="preview" 
+                                className={`w-full h-full rounded-md ${isUploading ? 'opacity-50' : ''}`}
+                             />
                             {isUploading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-20">
                                     <LoaderCircle className="animate-spin text-white" size={20} />
                                 </div>
                             )}
@@ -301,8 +354,11 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                   </div>
                   </div>
                   <div className="flex justify-end gap-3 pt-4 border-t border-stone-100 mt-4">
-                      <button onClick={() => setEditingProduct(null)} className="px-4 py-2 text-sm font-bold text-stone-500 bg-stone-100 rounded-lg hover:bg-stone-200">取消</button>
-                      <button onClick={handleSaveProduct} className="px-4 py-2 text-sm font-bold text-white bg-[#bcc9bc] text-[#2d2d2d] rounded-lg hover:bg-[#aab5aa]">儲存</button>
+                      <button onClick={() => !isSaving && setEditingProduct(null)} disabled={isSaving} className="px-4 py-2 text-sm font-bold text-stone-500 bg-stone-100 rounded-lg hover:bg-stone-200 disabled:opacity-50">取消</button>
+                      <button onClick={handleSaveProduct} disabled={isSaving} className="px-4 py-2 text-sm font-bold text-white bg-[#bcc9bc] text-[#2d2d2d] rounded-lg hover:bg-[#aab5aa] disabled:opacity-50 flex items-center gap-2">
+                        {isSaving && <LoaderCircle className="animate-spin" size={14} />}
+                        儲存
+                      </button>
                   </div>
               </div>
           </div>

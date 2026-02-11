@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs, writeBatch, orderBy } from 'firebase/firestore';
 import { Commission, CommissionStatus } from '../types';
 import { MOCK_COMMISSIONS } from '../constants';
 
@@ -12,17 +11,17 @@ export const useCommissionStore = () => {
   // 實時監聽 Firestore 中的訂單數據
   useEffect(() => {
     try {
-        const commissionsCollectionRef = collection(db, COMMISSIONS_COLLECTION);
+        const commissionsCollectionRef = db.collection(COMMISSIONS_COLLECTION);
         
         // 檢查是否需要初始化數據
         const initializeData = async () => {
             try {
-                const snapshot = await getDocs(commissionsCollectionRef);
+                const snapshot = await commissionsCollectionRef.get();
                 if (snapshot.empty) {
                     console.log("Commissions collection is empty. Initializing with mock data...");
-                    const batch = writeBatch(db);
+                    const batch = db.batch();
                     MOCK_COMMISSIONS.forEach((commission) => {
-                        const docRef = doc(commissionsCollectionRef); // Create a new doc with auto-generated ID
+                        const docRef = commissionsCollectionRef.doc(); // Create a new doc with auto-generated ID
                         // Firestore doesn't store the ID within the document, so we can remove it.
                         const { id, ...data } = commission;
                         batch.set(docRef, data);
@@ -38,19 +37,18 @@ export const useCommissionStore = () => {
         
         initializeData();
 
-        const q = query(commissionsCollectionRef, orderBy('dateAdded', 'desc'));
-
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-          const commissionsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Commission));
-          setCommissions(commissionsData);
-        }, (error) => {
-          console.error("Error fetching commissions:", error);
-          // Fallback for preview mode or invalid config
-          setCommissions(MOCK_COMMISSIONS);
-        });
+        const unsubscribe = commissionsCollectionRef.orderBy('dateAdded', 'desc')
+            .onSnapshot((querySnapshot) => {
+              const commissionsData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              } as Commission));
+              setCommissions(commissionsData);
+            }, (error) => {
+              console.error("Error fetching commissions:", error);
+              // Fallback for preview mode or invalid config
+              setCommissions(MOCK_COMMISSIONS);
+            });
 
         // 清理監聽器
         return () => unsubscribe();
@@ -69,7 +67,7 @@ export const useCommissionStore = () => {
         dateAdded: new Date().toISOString().split('T')[0],
         lastUpdated: new Date().toISOString().split('T')[0],
       };
-      await addDoc(collection(db, COMMISSIONS_COLLECTION), commissionToAdd);
+      await db.collection(COMMISSIONS_COLLECTION).add(commissionToAdd);
     } catch (e) {
       console.error("Error adding document: ", e);
       alert("無法新增訂單：可能是因為尚未設定 Firebase API Key 或網路問題。");
@@ -78,8 +76,7 @@ export const useCommissionStore = () => {
 
   const updateCommissionStatus = useCallback(async (id: string, newStatus: CommissionStatus) => {
     try {
-      const commissionDocRef = doc(db, COMMISSIONS_COLLECTION, id);
-      await updateDoc(commissionDocRef, {
+      await db.collection(COMMISSIONS_COLLECTION).doc(id).update({
         status: newStatus,
         lastUpdated: new Date().toISOString().split('T')[0],
       });
@@ -90,8 +87,7 @@ export const useCommissionStore = () => {
 
   const updateCommission = useCallback(async (id: string, data: Partial<Omit<Commission, 'id'>>) => {
     try {
-      const commissionDocRef = doc(db, COMMISSIONS_COLLECTION, id);
-      await updateDoc(commissionDocRef, {
+      await db.collection(COMMISSIONS_COLLECTION).doc(id).update({
         ...data,
         lastUpdated: new Date().toISOString().split('T')[0],
       });
@@ -102,8 +98,7 @@ export const useCommissionStore = () => {
 
   const deleteCommission = useCallback(async (id: string) => {
     try {
-      const commissionDocRef = doc(db, COMMISSIONS_COLLECTION, id);
-      await deleteDoc(commissionDocRef);
+      await db.collection(COMMISSIONS_COLLECTION).doc(id).delete();
     } catch (e) {
       console.error("Error deleting document: ", e);
     }

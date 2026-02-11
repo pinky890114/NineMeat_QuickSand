@@ -13,7 +13,6 @@ import { ProductManagerModal } from './components/ProductManagerModal'; // Impor
 import { EditCommissionModal } from './components/EditCommissionModal';
 import { Lock, Unlock, ShoppingBag, Search, GalleryHorizontal, ArrowRight, Facebook } from 'lucide-react';
 import { auth } from './firebase';
-import { signInAnonymously } from 'firebase/auth';
 
 // --- HomePage Component ---
 interface HomePageProps {
@@ -114,7 +113,7 @@ const App: React.FC = () => {
       setIsLoggingIn(true);
       try {
         // 執行 Firebase 匿名登入，取得上傳權限
-        await signInAnonymously(auth);
+        await auth.signInAnonymously();
         setCurrentArtist('肉圓');
       } catch (error: any) {
         console.error("Login failed:", error);
