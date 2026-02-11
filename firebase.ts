@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 
 // =================================================================================
 // 🔥 重要：請將此處的設定物件替換成您在 Firebase Console 複製的 `firebaseConfig`
@@ -32,3 +33,6 @@ export const db = getFirestore(app);
 
 // 獲取並匯出 Firebase Storage 服務
 export const storage = getStorage(app);
+
+// 獲取並匯出 Firebase Auth 服務
+export const auth = getAuth(app);

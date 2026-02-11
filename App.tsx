@@ -12,6 +12,8 @@ import { CommissionForm } from './components/CommissionForm';
 import { ProductManagerModal } from './components/ProductManagerModal'; // Import the new component
 import { EditCommissionModal } from './components/EditCommissionModal';
 import { Lock, Unlock, ShoppingBag, Search, GalleryHorizontal, ArrowRight, Facebook } from 'lucide-react';
+import { auth } from './firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 // --- HomePage Component ---
 interface HomePageProps {
@@ -105,16 +107,28 @@ const App: React.FC = () => {
   const [isProductManagerOpen, setIsProductManagerOpen] = useState(false); // New state for product manager
   const [currentArtist, setCurrentArtist] = useState<string>('');
   const [editingCommission, setEditingCommission] = useState<Commission | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const handleLogin = (password: string) => {
+  const handleLogin = async (password: string) => {
     if (password === 'ajo14576') {
-      setCurrentArtist('肉圓');
+      setIsLoggingIn(true);
+      try {
+        // 執行 Firebase 匿名登入，取得上傳權限
+        await signInAnonymously(auth);
+        setCurrentArtist('肉圓');
+      } catch (error: any) {
+        console.error("Login failed:", error);
+        alert(`登入發生錯誤: ${error.message}。請確認您已在 Firebase Console 啟用匿名登入 (Anonymous Auth)。`);
+      } finally {
+        setIsLoggingIn(false);
+      }
     } else {
       alert('密碼錯誤！');
     }
   };
 
   const handleLogout = () => {
+    // 登出時不需要真的登出 Firebase，只要切換 UI 狀態即可，避免下次還要重新匿名登入
     setCurrentArtist('');
   };
   
@@ -200,7 +214,7 @@ const App: React.FC = () => {
 
     if (appView === 'tracker') {
       if (isAdminView && !isLoggedIn) {
-        return <LoginScreen onLogin={handleLogin} />;
+        return <LoginScreen onLogin={handleLogin} isLoading={isLoggingIn} />;
       }
       return (
         <>

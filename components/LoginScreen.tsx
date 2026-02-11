@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Palette, ArrowRight } from 'lucide-react';
+import { Palette, ArrowRight, LoaderCircle } from 'lucide-react';
 
 interface LoginScreenProps {
   onLogin: (password: string) => void;
+  isLoading?: boolean;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false }) => {
   const [loginInput, setLoginInput] = useState('');
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -26,17 +27,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           <input 
             type="password" 
             placeholder="請輸入密碼" 
-            className="w-full bg-stone-50 border-2 border-stone-200 rounded-xl px-4 py-3 text-center font-bold text-stone-700 focus:outline-none focus:border-[#6F8F72] focus:ring-4 focus:ring-[#6F8F72]/10 transition-all placeholder:font-normal"
+            className="w-full bg-stone-50 border-2 border-stone-200 rounded-xl px-4 py-3 text-center font-bold text-stone-700 focus:outline-none focus:border-[#6F8F72] focus:ring-4 focus:ring-[#6F8F72]/10 transition-all placeholder:font-normal disabled:opacity-50"
             value={loginInput}
             onChange={(e) => setLoginInput(e.target.value)}
+            disabled={isLoading}
             autoFocus
           />
           <button 
             type="submit"
-            disabled={!loginInput.trim()}
+            disabled={!loginInput.trim() || isLoading}
             className="w-full bg-[#bcc9bc] hover:bg-[#aab5aa] text-[#2d2d2d] font-bold py-3 rounded-xl transition-all shadow-lg shadow-[#bcc9bc]/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            進入管理後台 <ArrowRight size={18} />
+            {isLoading ? (
+                <><LoaderCircle size={18} className="animate-spin" /> 驗證中...</>
+            ) : (
+                <>進入管理後台 <ArrowRight size={18} /></>
+            )}
           </button>
         </form>
       </div>
