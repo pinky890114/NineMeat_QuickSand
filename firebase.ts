@@ -14,9 +14,8 @@ const firebaseConfig = {
 
   projectId: "commission-tracker-e6da0",
 
-  // 修正：通常預設 bucket 是專案ID.appspot.com，而非 firebasestorage.app
-  // 這解決了 404 與 CORS preflight 失敗的問題
-  storageBucket: "commission-tracker-e6da0.appspot.com",
+  // 使用 firebasestorage.app，這是新版 Firebase 專案的標準預設 bucket
+  storageBucket: "commission-tracker-e6da0.firebasestorage.app",
 
   messagingSenderId: "859578190938",
 

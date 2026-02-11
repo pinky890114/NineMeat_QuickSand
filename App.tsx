@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Commission, CommissionStatus, ThemeMode } from './types';
 import { useCommissionStore } from './hooks/useCommissionStore';
-import { useProductStore } from './hooks/useProductStore'; // Import the new hook
+import { useProductStore } from './hooks/useProductStore';
 import { AddCommissionModal } from './components/AddCommissionModal';
 import { Header } from './components/Header';
 import { DashboardStats } from './components/DashboardStats';
@@ -9,7 +9,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { CommissionControls } from './components/CommissionControls';
 import { CommissionList } from './components/CommissionList';
 import { CommissionForm } from './components/CommissionForm';
-import { ProductManagerModal } from './components/ProductManagerModal'; // Import the new component
+import { ProductManagerModal } from './components/ProductManagerModal';
 import { EditCommissionModal } from './components/EditCommissionModal';
 import { Lock, Unlock, ShoppingBag, Search, GalleryHorizontal, ArrowRight, Facebook } from 'lucide-react';
 import { auth } from './firebase';
@@ -104,7 +104,7 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<CommissionStatus | 'All'>('All');
   const [isAddingModalOpen, setIsAddingModalOpen] = useState(false);
-  const [isProductManagerOpen, setIsProductManagerOpen] = useState(false); // New state for product manager
+  const [isProductManagerOpen, setIsProductManagerOpen] = useState(false);
   const [currentArtist, setCurrentArtist] = useState<string>('');
   const [editingCommission, setEditingCommission] = useState<Commission | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -113,7 +113,7 @@ const App: React.FC = () => {
     if (password === 'ajo14576') {
       setIsLoggingIn(true);
       try {
-        // 執行 Firebase 匿名登入，取得上傳權限 (Modular SDK)
+        // 執行 Firebase 匿名登入 (Modular SDK)
         await signInAnonymously(auth);
         setCurrentArtist('肉圓');
       } catch (error: any) {
@@ -128,7 +128,6 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // 登出時不需要真的登出 Firebase，只要切換 UI 狀態即可，避免下次還要重新匿名登入
     setCurrentArtist('');
   };
   
@@ -230,7 +229,7 @@ const App: React.FC = () => {
             onStatusFilterChange={setStatusFilter}
             viewMode={viewMode}
             onAddClick={() => setIsAddingModalOpen(true)}
-            onManageProductsClick={() => setIsProductManagerOpen(true)} // New handler
+            onManageProductsClick={() => setIsProductManagerOpen(true)}
           />
           <CommissionList
             commissions={filteredCommissions}
