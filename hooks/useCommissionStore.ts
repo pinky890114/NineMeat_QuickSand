@@ -1,5 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  orderBy, 
+  getDocs,
+  writeBatch
+} from 'firebase/firestore';
 import { Commission, CommissionStatus } from '../types';
 import { MOCK_COMMISSIONS } from '../constants';
 
@@ -11,20 +23,20 @@ export const useCommissionStore = () => {
   // 實時監聽 Firestore 中的訂單數據
   useEffect(() => {
     try {
-        const commissionsCollectionRef = db.collection(COMMISSIONS_COLLECTION);
+        const commissionsCollectionRef = collection(db, COMMISSIONS_COLLECTION);
         
         // 檢查是否需要初始化數據
         const initializeData = async () => {
             try {
-                const snapshot = await commissionsCollectionRef.get();
+                const snapshot = await getDocs(commissionsCollectionRef);
                 if (snapshot.empty) {
                     console.log("Commissions collection is empty. Initializing with mock data...");
-                    const batch = db.batch();
+                    const batch = writeBatch(db);
                     MOCK_COMMISSIONS.forEach((commission) => {
-                        const docRef = commissionsCollectionRef.doc(); // Create a new doc with auto-generated ID
-                        // Firestore doesn't store the ID within the document, so we can remove it.
+                        const newDocRef = doc(commissionsCollectionRef); 
+                        // Firestore doesn't store the ID within the document by default
                         const { id, ...data } = commission;
-                        batch.set(docRef, data);
+                        batch.set(newDocRef, data);
                     });
                     await batch.commit();
                     console.log("Mock data initialized in Firestore.");
@@ -37,8 +49,9 @@ export const useCommissionStore = () => {
         
         initializeData();
 
-        const unsubscribe = commissionsCollectionRef.orderBy('dateAdded', 'desc')
-            .onSnapshot((querySnapshot) => {
+        const q = query(commissionsCollectionRef, orderBy('dateAdded', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
               const commissionsData = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -67,7 +80,7 @@ export const useCommissionStore = () => {
         dateAdded: new Date().toISOString().split('T')[0],
         lastUpdated: new Date().toISOString().split('T')[0],
       };
-      await db.collection(COMMISSIONS_COLLECTION).add(commissionToAdd);
+      await addDoc(collection(db, COMMISSIONS_COLLECTION), commissionToAdd);
     } catch (e) {
       console.error("Error adding document: ", e);
       alert("無法新增訂單：可能是因為尚未設定 Firebase API Key 或網路問題。");
@@ -76,7 +89,8 @@ export const useCommissionStore = () => {
 
   const updateCommissionStatus = useCallback(async (id: string, newStatus: CommissionStatus) => {
     try {
-      await db.collection(COMMISSIONS_COLLECTION).doc(id).update({
+      const commissionRef = doc(db, COMMISSIONS_COLLECTION, id);
+      await updateDoc(commissionRef, {
         status: newStatus,
         lastUpdated: new Date().toISOString().split('T')[0],
       });
@@ -87,7 +101,8 @@ export const useCommissionStore = () => {
 
   const updateCommission = useCallback(async (id: string, data: Partial<Omit<Commission, 'id'>>) => {
     try {
-      await db.collection(COMMISSIONS_COLLECTION).doc(id).update({
+      const commissionRef = doc(db, COMMISSIONS_COLLECTION, id);
+      await updateDoc(commissionRef, {
         ...data,
         lastUpdated: new Date().toISOString().split('T')[0],
       });
@@ -98,7 +113,7 @@ export const useCommissionStore = () => {
 
   const deleteCommission = useCallback(async (id: string) => {
     try {
-      await db.collection(COMMISSIONS_COLLECTION).doc(id).delete();
+      await deleteDoc(doc(db, COMMISSIONS_COLLECTION, id));
     } catch (e) {
       console.error("Error deleting document: ", e);
     }

@@ -1,4 +1,5 @@
 import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 /**
  * 壓縮圖片 (優化版)
@@ -89,15 +90,14 @@ export const uploadImage = async (file: File): Promise<string> => {
     // 移除非英數字符，只留副檔名
     const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
     const fileName = `products/${timestamp}_${safeName}.jpg`; // 強制副檔名為 jpg
-    
-    const storageRef = storage.ref(fileName);
+    const storageRef = ref(storage, fileName);
 
     // 3. 上傳檔案
-    const snapshot = await storageRef.put(compressedBlob);
+    const snapshot = await uploadBytes(storageRef, compressedBlob);
     console.log('Firebase Storage 上傳成功');
 
     // 4. 取得下載連結
-    const downloadURL = await snapshot.ref.getDownloadURL();
+    const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
 
   } catch (error: any) {

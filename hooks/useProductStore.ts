@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { ProductOptions } from '../types';
 import { productOptions as initialProducts } from '../constants';
 
@@ -14,16 +15,16 @@ export const useProductStore = () => {
     let unsubscribe = () => {};
 
     try {
-        const docRef = db.collection(PRODUCTS_COLLECTION).doc(PRODUCTS_DOC_ID);
+        const docRef = doc(db, PRODUCTS_COLLECTION, PRODUCTS_DOC_ID);
         
         // Check if we need to initialize data
         const initializeData = async () => {
             try {
-                const docSnap = await docRef.get();
-                if (!docSnap.exists) {
+                const docSnap = await getDoc(docRef);
+                if (!docSnap.exists()) {
                     console.log("Product options document does not exist. Initializing...");
                     try {
-                        await docRef.set(initialProducts);
+                        await setDoc(docRef, initialProducts);
                         console.log("Initial product options set in Firestore.");
                     } catch (error) {
                         console.error("Error setting initial product options:", error);
@@ -39,8 +40,8 @@ export const useProductStore = () => {
 
         initializeData();
 
-        unsubscribe = docRef.onSnapshot((docSnap) => {
-          if (docSnap.exists) {
+        unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
             setProductOptions(docSnap.data() as ProductOptions);
           } else {
             // This case should be handled by initialization, but as a fallback:
@@ -65,8 +66,8 @@ export const useProductStore = () => {
 
   const updateProductOptions = async (newProductOptions: ProductOptions) => {
     try {
-        const docRef = db.collection(PRODUCTS_COLLECTION).doc(PRODUCTS_DOC_ID);
-        await docRef.set(newProductOptions);
+        const docRef = doc(db, PRODUCTS_COLLECTION, PRODUCTS_DOC_ID);
+        await setDoc(docRef, newProductOptions);
         return true;
     } catch (error: any) {
         console.error("Error updating product options:", error);
