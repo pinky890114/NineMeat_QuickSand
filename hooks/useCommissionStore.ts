@@ -2,64 +2,63 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 import { Commission, CommissionStatus } from '../types';
 import { MOCK_COMMISSIONS } from '../constants';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch, getDocs } from 'firebase/firestore';
 
 const COMMISSIONS_COLLECTION = 'commissions';
 
 export const useCommissionStore = () => {
   const [commissions, setCommissions] = useState<Commission[]>([]);
   
-  // 實時監聽 Firestore 中的訂單數據
   useEffect(() => {
     try {
-        const commissionsCollectionRef = db.collection(COMMISSIONS_COLLECTION);
+        const commissionsRef = collection(db, COMMISSIONS_COLLECTION);
         
-        // 檢查是否需要初始化數據
+        // 檢查並初始化數據 (Modular SDK)
         const initializeData = async () => {
             try {
-                const snapshot = await commissionsCollectionRef.get();
+                const q = query(commissionsRef);
+                const snapshot = await getDocs(q);
+                
                 if (snapshot.empty) {
                     console.log("Commissions collection is empty. Initializing with mock data...");
-                    const batch = db.batch();
+                    const batch = writeBatch(db);
                     MOCK_COMMISSIONS.forEach((commission) => {
-                        const newDocRef = commissionsCollectionRef.doc(); 
-                        // Firestore doesn't store the ID within the document by default
+                        // 使用新的 doc 參考
+                        const newDocRef = doc(commissionsRef);
                         const { id, ...data } = commission;
                         batch.set(newDocRef, data);
                     });
                     await batch.commit();
-                    console.log("Mock data initialized in Firestore.");
+                    console.log("Mock data initialized.");
                 }
             } catch (e) {
-                console.error("Initial data check failed (likely config issue), using mock data locally.", e);
+                console.error("Initial check failed (likely offline/no auth), using local mock.", e);
                 setCommissions(MOCK_COMMISSIONS);
             }
         };
         
         initializeData();
 
-        const unsubscribe = commissionsCollectionRef
-            .orderBy('dateAdded', 'desc')
-            .onSnapshot((querySnapshot) => {
-              const commissionsData = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-              } as Commission));
-              setCommissions(commissionsData);
-            }, (error) => {
-              console.error("Error fetching commissions:", error);
-              // Fallback for preview mode or invalid config
-              setCommissions(MOCK_COMMISSIONS);
-            });
+        // 監聽更新
+        const q = query(commissionsRef, orderBy('dateAdded', 'desc'));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const commissionsData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Commission));
+          setCommissions(commissionsData);
+        }, (error) => {
+          console.error("Error fetching commissions:", error);
+          setCommissions(MOCK_COMMISSIONS);
+        });
 
-        // 清理監聽器
         return () => unsubscribe();
     } catch (err) {
-        console.error("Firebase connection failed critical:", err);
+        console.error("Firebase connection error:", err);
         setCommissions(MOCK_COMMISSIONS);
         return () => {};
     }
   }, []);
-
 
   const addCommission = useCallback(async (newCommission: Omit<Commission, 'id' | 'dateAdded' | 'lastUpdated'>) => {
     try {
@@ -68,27 +67,29 @@ export const useCommissionStore = () => {
         dateAdded: new Date().toISOString().split('T')[0],
         lastUpdated: new Date().toISOString().split('T')[0],
       };
-      await db.collection(COMMISSIONS_COLLECTION).add(commissionToAdd);
+      await addDoc(collection(db, COMMISSIONS_COLLECTION), commissionToAdd);
     } catch (e) {
       console.error("Error adding document: ", e);
-      alert("無法新增訂單：可能是因為尚未設定 Firebase API Key 或網路問題。");
+      alert("無法新增訂單：可能是權限不足或網路問題。");
     }
   }, []);
 
   const updateCommissionStatus = useCallback(async (id: string, newStatus: CommissionStatus) => {
     try {
-      await db.collection(COMMISSIONS_COLLECTION).doc(id).update({
+      const docRef = doc(db, COMMISSIONS_COLLECTION, id);
+      await updateDoc(docRef, {
         status: newStatus,
         lastUpdated: new Date().toISOString().split('T')[0],
       });
     } catch (e) {
-      console.error("Error updating document status: ", e);
+      console.error("Error updating status: ", e);
     }
   }, []);
 
   const updateCommission = useCallback(async (id: string, data: Partial<Omit<Commission, 'id'>>) => {
     try {
-      await db.collection(COMMISSIONS_COLLECTION).doc(id).update({
+      const docRef = doc(db, COMMISSIONS_COLLECTION, id);
+      await updateDoc(docRef, {
         ...data,
         lastUpdated: new Date().toISOString().split('T')[0],
       });
@@ -99,7 +100,7 @@ export const useCommissionStore = () => {
 
   const deleteCommission = useCallback(async (id: string) => {
     try {
-      await db.collection(COMMISSIONS_COLLECTION).doc(id).delete();
+      await deleteDoc(doc(db, COMMISSIONS_COLLECTION, id));
     } catch (e) {
       console.error("Error deleting document: ", e);
     }

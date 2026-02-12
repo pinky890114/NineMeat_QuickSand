@@ -1,6 +1,7 @@
 import { Commission, CommissionStatus, ProductOptions } from './types';
 
 export const STATUS_STEPS = [
+  CommissionStatus.APPLYING,
   CommissionStatus.DISCUSSION,
   CommissionStatus.DEPOSIT_PAID,
   CommissionStatus.QUEUED,
@@ -32,6 +33,14 @@ export const productOptions: ProductOptions = {
         { name: '6cm圓形', price: 150, img: 'https://picsum.photos/seed/circ2/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}] },
         { name: '8cm圓形', price: 180, img: 'https://picsum.photos/seed/circ3/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}, {name: '立牌款式', price: 60}] },
         { name: '10cm圓形', price: 220, img: 'https://picsum.photos/seed/circ4/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}, {name: '立牌款式', price: 60}] },
+    ],
+    '徽章磚': [
+        { name: '58mm徽章磚', price: 200, img: 'https://picsum.photos/seed/badge1/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '立牌款式', price: 60}] },
+        { name: '75mm徽章磚', price: 240, img: 'https://picsum.photos/seed/badge2/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '立牌款式', price: 60}] },
+    ],
+    '雙色磚': [
+        { name: '雙色流麻磚 (常規)', price: 300, img: 'https://picsum.photos/seed/twotone1/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '磁吸款', price: 40}] },
+        { name: '漸層雙色磚', price: 350, img: 'https://picsum.photos/seed/twotone2/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '磁吸款', price: 40}] },
     ],
     '異形': [
         { name: '7.5x15cm圓頂彩窗', price: 0, img: 'https://picsum.photos/seed/spec1/400', addons: [{name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },

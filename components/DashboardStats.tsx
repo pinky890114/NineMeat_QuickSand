@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThemeMode } from '../types';
+import { ThemeMode, CommissionStatus } from '../types';
 
 interface Stats {
   queue: number;

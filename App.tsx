@@ -13,6 +13,7 @@ import { ProductManagerModal } from './components/ProductManagerModal';
 import { EditCommissionModal } from './components/EditCommissionModal';
 import { Lock, Unlock, ShoppingBag, Search, GalleryHorizontal, ArrowRight, Facebook } from 'lucide-react';
 import { auth } from './firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 // --- HomePage Component ---
 interface HomePageProps {
@@ -112,8 +113,8 @@ const App: React.FC = () => {
     if (password === 'ajo14576') {
       setIsLoggingIn(true);
       try {
-        // 執行 Firebase 匿名登入 (v8 SDK)
-        await auth.signInAnonymously();
+        // 執行 Firebase 匿名登入 (Modular SDK)
+        await signInAnonymously(auth);
         setCurrentArtist('肉圓');
       } catch (error: any) {
         console.error("Login failed:", error);
@@ -185,6 +186,7 @@ const App: React.FC = () => {
     const targetCommissions = commissions;
     return {
       queue: targetCommissions.filter(c => 
+        c.status === CommissionStatus.APPLYING ||
         c.status === CommissionStatus.DISCUSSION || 
         c.status === CommissionStatus.DEPOSIT_PAID || 
         c.status === CommissionStatus.QUEUED

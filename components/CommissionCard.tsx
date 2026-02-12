@@ -33,6 +33,7 @@ export const CommissionCard: React.FC<CommissionCardProps> = ({
 
   const getStatusColor = (status: CommissionStatus) => {
     switch(status) {
+      case CommissionStatus.APPLYING: return 'bg-purple-50 text-purple-600 border-purple-200';
       case CommissionStatus.DISCUSSION: return 'bg-stone-100 text-stone-600 border-stone-200';
       case CommissionStatus.DEPOSIT_PAID: return 'bg-amber-50 text-amber-600 border-amber-200';
       case CommissionStatus.QUEUED: return 'bg-slate-100 text-slate-600 border-slate-200';
@@ -144,7 +145,7 @@ export const CommissionCard: React.FC<CommissionCardProps> = ({
                 <button 
                   type="button"
                   onClick={handlePrevStep}
-                  disabled={commission.status === CommissionStatus.DISCUSSION}
+                  disabled={commission.status === CommissionStatus.APPLYING}
                   className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-stone-500 hover:text-stone-700 disabled:opacity-30 hover:bg-stone-100 rounded-full transition-all"
                 >
                   <ChevronLeft size={16} /> 上一步

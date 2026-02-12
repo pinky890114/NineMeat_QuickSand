@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Check, ArrowLeft, Send, Shapes, Circle, Square, RectangleHorizontal, Edit } from 'lucide-react';
+import { Check, ArrowLeft, Send, Shapes, Circle, Square, RectangleHorizontal, Edit, Award, Layers } from 'lucide-react';
 import { Product, ProductOptions, Commission, CommissionStatus } from '../types';
 import { AddonSelectionModal } from './AddonSelectionModal';
 
@@ -20,6 +20,8 @@ const categoryIcons = {
     '長方形': <RectangleHorizontal size={16} />,
     '正方形': <Square size={16} />,
     '圓形': <Circle size={16} />,
+    '徽章磚': <Award size={16} />,
+    '雙色磚': <Layers size={16} />,
     '異形': <Shapes size={16} />,
 };
 
@@ -112,8 +114,7 @@ export const CommissionForm: React.FC<CommissionFormProps> = ({ onNavigateHome, 
         description: description,
         type: commissionType,
         price: totalPrice,
-        // FIX: Corrected typo from QUEUE to QUEUED.
-        status: CommissionStatus.QUEUED,
+        status: CommissionStatus.APPLYING, // Set default status to APPLYING
         notes: formData.notes,
     };
 

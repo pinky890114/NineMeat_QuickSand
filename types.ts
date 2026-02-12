@@ -1,4 +1,5 @@
 export enum CommissionStatus {
+  APPLYING = '申請中',
   DISCUSSION = '內容討論',
   DEPOSIT_PAID = '支付訂金',
   QUEUED = '確認排單',

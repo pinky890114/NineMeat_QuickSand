@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductOptions, Product, Addon } from '../types';
 import { uploadImage } from '../services/imageUploadService';
-import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff, Save } from 'lucide-react';
+import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff, Save, Award, Layers } from 'lucide-react';
 
 interface ProductManagerModalProps {
   isOpen: boolean;
@@ -14,6 +14,8 @@ const categoryIcons = {
     '長方形': <RectangleHorizontal size={16} />,
     '正方形': <Square size={16} />,
     '圓形': <Circle size={16} />,
+    '徽章磚': <Award size={16} />,
+    '雙色磚': <Layers size={16} />,
     '異形': <Shapes size={16} />,
 };
 
