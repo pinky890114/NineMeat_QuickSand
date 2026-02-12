@@ -10,7 +10,23 @@ export const STATUS_STEPS = [
   CommissionStatus.SHIPPED,
 ];
 
+// Explicitly define the render order of categories
+export const CATEGORY_ORDER = [
+    '正方形',
+    '長方形',
+    '圓形',
+    '異形',
+    '徽章磚',
+    '雙色磚',
+];
+
 export const productOptions: ProductOptions = {
+    '正方形': [
+        { name: '5x5cm正方形', price: 120, img: 'https://picsum.photos/seed/sq1/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '吊牌款式', price: 40}] },
+        { name: '6x6cm正方形', price: 120, img: 'https://picsum.photos/seed/sq2/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}] },
+        { name: '8x8cm正方形', price: 120, img: 'https://picsum.photos/seed/sq3/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}] },
+        { name: '10x10cm正方形', price: 120, img: 'https://picsum.photos/seed/sq4/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: '吊牌款式', price: 40}, {name: '立牌款式', price: 60}] },
+    ],
     '長方形': [
         { name: '3x4cm長方形', price: 120, img: 'https://picsum.photos/seed/rect1/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '吊牌款式', price: 40}] },
         { name: '4x6cm長方形', price: 150, img: 'https://picsum.photos/seed/rect2/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}] },
@@ -22,17 +38,18 @@ export const productOptions: ProductOptions = {
         { name: '8x21cm長方形', price: 320, img: 'https://picsum.photos/seed/rect8/400', addons: [{name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
         { name: '10x15cm長方形', price: 270, img: 'https://picsum.photos/seed/rect9/400', addons: [{name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '磁吸款', price: 40}, {name: '雙色款', price: 50}] },
     ],
-    '正方形': [
-        { name: '5x5cm正方形', price: 120, img: 'https://picsum.photos/seed/sq1/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '吊牌款式', price: 40}] },
-        { name: '6x6cm正方形', price: 120, img: 'https://picsum.photos/seed/sq2/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}] },
-        { name: '8x8cm正方形', price: 120, img: 'https://picsum.photos/seed/sq3/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}] },
-        { name: '10x10cm正方形', price: 120, img: 'https://picsum.photos/seed/sq4/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '多層流沙層', price: 50}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: '吊牌款式', price: 40}, {name: '立牌款式', price: 60}] },
-    ],
     '圓形': [
         { name: '5cm圓形', price: 120, img: 'https://picsum.photos/seed/circ1/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}] },
         { name: '6cm圓形', price: 150, img: 'https://picsum.photos/seed/circ2/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}] },
         { name: '8cm圓形', price: 180, img: 'https://picsum.photos/seed/circ3/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}, {name: '立牌款式', price: 60}] },
         { name: '10cm圓形', price: 220, img: 'https://picsum.photos/seed/circ4/400', addons: [{name: '特殊亮片', price: 30}, {name: 'PET膠帶', price: 20}, {name: '流沙油速', price: 10}, {name: '立牌款式', price: 60}] },
+    ],
+    '異形': [
+        { name: '7.5x15cm圓頂彩窗', price: 0, img: 'https://picsum.photos/seed/spec1/400', addons: [{name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
+        { name: '7x15cm票根', price: 270, img: 'https://picsum.photos/seed/spec2/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
+        { name: '7x20cm票根', price: 300, img: 'https://picsum.photos/seed/spec3/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}, {name: '雙色款', price: 50}] },
+        { name: '通行證', price: 170, img: 'https://picsum.photos/seed/spec4/400', addons: [{name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}] },
+        { name: '異形總覽', price: 100, img: 'https://picsum.photos/seed/spec5/400', addons: [{name: '立牌款式', price: 60}, {name: '吊牌款式', price: 40}, {name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
     ],
     '徽章磚': [
         { name: '58mm徽章磚', price: 200, img: 'https://picsum.photos/seed/badge1/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '立牌款式', price: 60}] },
@@ -42,13 +59,6 @@ export const productOptions: ProductOptions = {
         { name: '雙色流麻磚 (常規)', price: 300, img: 'https://picsum.photos/seed/twotone1/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '磁吸款', price: 40}] },
         { name: '漸層雙色磚', price: 350, img: 'https://picsum.photos/seed/twotone2/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: 'PET膠帶', price: 20}, {name: '磁吸款', price: 40}] },
     ],
-    '異形': [
-        { name: '7.5x15cm圓頂彩窗', price: 0, img: 'https://picsum.photos/seed/spec1/400', addons: [{name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
-        { name: '7x15cm票根', price: 270, img: 'https://picsum.photos/seed/spec2/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
-        { name: '7x20cm票根', price: 300, img: 'https://picsum.photos/seed/spec3/400', addons: [{name: '特殊亮片', price: 30}, {name: '流沙油速', price: 10}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}, {name: '雙色款', price: 50}] },
-        { name: '通行證', price: 170, img: 'https://picsum.photos/seed/spec4/400', addons: [{name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}] },
-        { name: '異形總覽', price: 100, img: 'https://picsum.photos/seed/spec5/400', addons: [{name: '立牌款式', price: 60}, {name: '吊牌款式', price: 40}, {name: '流沙油速', price: 10}, {name: '特殊亮片', price: 30}, {name: '閃粉數量', price: 10}, {name: 'PET膠帶', price: 20}] },
-    ]
 };
 
 

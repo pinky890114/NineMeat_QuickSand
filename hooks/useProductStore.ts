@@ -39,7 +39,12 @@ export const useProductStore = () => {
 
         unsubscribe = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
-            setProductOptions(docSnap.data() as ProductOptions);
+            const firestoreData = docSnap.data() as ProductOptions;
+            // Merge initialProducts with firestoreData to ensure new categories (keys) 
+            // from initialProducts appear even if they don't exist in the DB yet.
+            // Using spread order: initialProducts first, then firestoreData overwrites matching keys.
+            // This preserves existing DB edits but adds missing new categories.
+            setProductOptions({ ...initialProducts, ...firestoreData });
           } else {
             setProductOptions(initialProducts);
           }

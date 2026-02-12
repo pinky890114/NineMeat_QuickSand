@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ProductOptions, Product, Addon } from '../types';
 import { uploadImage } from '../services/imageUploadService';
-import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff, Save, Award, Layers } from 'lucide-react';
+import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, UploadCloud, Trash2, Edit, LoaderCircle, AlertCircle, ImageOff, Save, Award, Layers, ChevronDown } from 'lucide-react';
+import { CATEGORY_ORDER } from '../constants';
 
 interface ProductManagerModalProps {
   isOpen: boolean;
@@ -65,7 +66,13 @@ const ProductImage = ({ src, alt, className }: { src: string, alt: string, class
 
 export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen, onClose, productOptions, onSave }) => {
   const [internalOptions, setInternalOptions] = useState<ProductOptions>(productOptions);
-  const [activeCategory, setActiveCategory] = useState<string>(Object.keys(productOptions)[0]);
+  
+  // Use CATEGORY_ORDER to determine the first active category if available
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    const firstAvailable = CATEGORY_ORDER.find(cat => productOptions[cat]);
+    return firstAvailable || Object.keys(productOptions)[0] || '';
+  });
+
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditingNew, setIsEditingNew] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -73,10 +80,33 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Use memo to ensure consistent order in sidebar
+  const displayCategories = useMemo(() => {
+    const ordered = CATEGORY_ORDER.filter(cat => internalOptions[cat]);
+    const others = Object.keys(internalOptions).filter(k => !CATEGORY_ORDER.includes(k));
+    return [...ordered, ...others];
+  }, [internalOptions]);
+
+  // Extract all unique addons across all products to build the suggestion list
+  const presetAddons = useMemo(() => {
+    const map = new Map<string, number>();
+    Object.values(internalOptions).flat().forEach(p => {
+        p.addons?.forEach(a => {
+            // Store the most recent valid price found for this addon name
+            if(a.price > 0 || !map.has(a.name)) {
+                map.set(a.name, a.price);
+            }
+        });
+    });
+    return Array.from(map.entries()).map(([name, price]) => ({ name, price }));
+  }, [internalOptions]);
+
   useEffect(() => {
     setInternalOptions(productOptions);
     if (!Object.keys(productOptions).includes(activeCategory)) {
-        setActiveCategory(Object.keys(productOptions)[0] || '');
+        // If current active category doesn't exist, switch to first available
+        const firstAvailable = CATEGORY_ORDER.find(cat => productOptions[cat]);
+        setActiveCategory(firstAvailable || Object.keys(productOptions)[0] || '');
     }
   }, [productOptions, isOpen]);
 
@@ -105,7 +135,16 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   const handleAddonUpdate = (index: number, field: keyof Addon, value: string | number) => {
     if (editingProduct && editingProduct.addons) {
         const newAddons = [...editingProduct.addons];
-        const updatedAddon = { ...newAddons[index], [field]: value };
+        let updatedAddon = { ...newAddons[index], [field]: value };
+        
+        // Auto-fill price if name matches a preset and current price is 0
+        if (field === 'name') {
+            const preset = presetAddons.find(p => p.name === value);
+            if (preset && updatedAddon.price === 0) {
+                updatedAddon.price = preset.price;
+            }
+        }
+
         newAddons[index] = updatedAddon;
         handleProductChange('addons', newAddons);
     }
@@ -116,6 +155,27 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
           const newAddons = [...(editingProduct.addons || []), { name: '', price: 0 }];
           handleProductChange('addons', newAddons);
       }
+  };
+
+  // New function to handle dropdown selection
+  const handleQuickAddAddon = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const name = e.target.value;
+      if (!name || !editingProduct) return;
+
+      const preset = presetAddons.find(p => p.name === name);
+      const price = preset ? preset.price : 0;
+
+      // Check if already exists to avoid duplicates (optional, but good UX)
+      const exists = editingProduct.addons?.some(a => a.name === name);
+      if (exists) {
+          alert(`${name} 已經在列表中囉！`);
+          e.target.value = "";
+          return;
+      }
+
+      const newAddons = [...(editingProduct.addons || []), { name, price }];
+      handleProductChange('addons', newAddons);
+      e.target.value = ""; // Reset select
   };
 
   const handleRemoveAddon = (index: number) => {
@@ -218,7 +278,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
         <div className="flex-grow flex gap-6 overflow-hidden">
             {/* Sidebar */}
             <div className="w-1/3 md:w-1/4 border-r border-stone-100 pr-4 space-y-2 overflow-y-auto">
-                 {Object.keys(internalOptions).map(category => (
+                 {displayCategories.map(category => (
                     <button key={category} onClick={() => setActiveCategory(category)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${activeCategory === category ? 'bg-[#e8ede8] text-[#6F8F72]' : 'text-stone-500 hover:bg-stone-50'}`}>
                         {categoryIcons[category as keyof typeof categoryIcons]} {category}
@@ -284,16 +344,57 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
                   
                   <div>
                     <label className="text-xs font-bold text-stone-500 mb-2 block">附加項目</label>
-                    <div className="space-y-2">
+                    
+                    {/* Datalist for auto-completion */}
+                    <datalist id="addon-suggestions">
+                        {presetAddons.map((addon) => (
+                            <option key={addon.name} value={addon.name}>{addon.price > 0 ? `$${addon.price}` : ''}</option>
+                        ))}
+                    </datalist>
+
+                    <div className="space-y-2 mb-3">
                         {(editingProduct.addons || []).map((addon, index) => (
                             <div key={index} className="flex items-center gap-2">
-                                <input type="text" placeholder="項目名稱" value={addon.name} onChange={e => handleAddonUpdate(index, 'name', e.target.value)} className="w-full bg-stone-100 border-stone-200 rounded-lg px-3 py-2 text-sm" />
+                                <input 
+                                    list="addon-suggestions"
+                                    type="text" 
+                                    placeholder="項目名稱" 
+                                    value={addon.name} 
+                                    onChange={e => handleAddonUpdate(index, 'name', e.target.value)} 
+                                    className="w-full bg-stone-100 border-stone-200 rounded-lg px-3 py-2 text-sm" 
+                                />
                                 <input type="number" placeholder="價格" value={addon.price} onChange={e => handleAddonUpdate(index, 'price', Number(e.target.value))} className="w-32 bg-stone-100 border-stone-200 rounded-lg px-3 py-2 text-sm" />
                                 <button onClick={() => handleRemoveAddon(index)} className="p-2 text-stone-400 hover:text-red-500"><X size={16} /></button>
                             </div>
                         ))}
                     </div>
-                    <button onClick={handleAddAddon} className="mt-2 text-xs font-bold text-[#6F8F72] hover:underline">+ 新增項目</button>
+
+                    <div className="flex gap-2">
+                        {/* Quick Add Dropdown */}
+                        <div className="relative flex-grow">
+                            <select 
+                                onChange={handleQuickAddAddon}
+                                className="w-full appearance-none bg-stone-50 border-2 border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-600 font-bold focus:outline-none focus:border-[#6F8F72] cursor-pointer"
+                                defaultValue=""
+                            >
+                                <option value="" disabled>快速新增常用項目...</option>
+                                {presetAddons.map(addon => (
+                                    <option key={addon.name} value={addon.name}>
+                                        {addon.name} (+{addon.price}元)
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+                                <ChevronDown size={14} />
+                            </div>
+                        </div>
+
+                        {/* Add Custom Button */}
+                        <button onClick={handleAddAddon} className="flex items-center gap-1 bg-[#f0f3f0] hover:bg-[#e8ede8] text-[#6F8F72] px-3 py-2 rounded-lg text-xs font-bold border border-stone-200 whitespace-nowrap">
+                            <Plus size={14} /> 自訂項目
+                        </button>
+                    </div>
+
                   </div>
 
                   <div>

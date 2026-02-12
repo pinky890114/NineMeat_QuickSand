@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Check, ArrowLeft, Send, Shapes, Circle, Square, RectangleHorizontal, Edit, Award, Layers } from 'lucide-react';
+import { Check, ArrowLeft, Send, Shapes, Circle, Square, RectangleHorizontal, Edit, Award, Layers, ArrowDown } from 'lucide-react';
 import { Product, ProductOptions, Commission, CommissionStatus } from '../types';
 import { AddonSelectionModal } from './AddonSelectionModal';
+import { CATEGORY_ORDER } from '../constants';
 
 interface CommissionFormProps {
   onNavigateHome: () => void;
@@ -40,7 +41,13 @@ const addonColors: { [key: string]: string } = {
 export const CommissionForm: React.FC<CommissionFormProps> = ({ onNavigateHome, productOptions, onAddCommission }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string>(Object.keys(productOptions)[0]);
+  
+  // Use CATEGORY_ORDER to determine the first active category if available
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    const firstAvailable = CATEGORY_ORDER.find(cat => productOptions[cat]);
+    return firstAvailable || Object.keys(productOptions)[0] || '';
+  });
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
@@ -123,6 +130,13 @@ export const CommissionForm: React.FC<CommissionFormProps> = ({ onNavigateHome, 
     alert('委託已送出！\n感謝您的訂製，我們會盡快與您聯繫確認細節。');
     onNavigateHome();
   };
+
+  // Prepare categories to display based on fixed order + any extra dynamic keys
+  const displayCategories = useMemo(() => {
+    const ordered = CATEGORY_ORDER.filter(cat => productOptions[cat]);
+    const others = Object.keys(productOptions).filter(k => !CATEGORY_ORDER.includes(k));
+    return [...ordered, ...others];
+  }, [productOptions]);
 
   return (
     <div className="w-full max-w-3xl mx-auto py-8 animate-in fade-in zoom-in-95 duration-500">
@@ -224,14 +238,96 @@ export const CommissionForm: React.FC<CommissionFormProps> = ({ onNavigateHome, 
         {currentStep === 2 && (
             <div className="animate-in fade-in">
                 <h2 className="text-2xl font-bold text-[#6F8F72] mb-6">訂做流程</h2>
-                <div className="bg-stone-50 p-4 rounded-2xl border-2 border-stone-100">
-                    <img 
-                        src="https://img.notionusercontent.com/s3/prod-files-secure%2Fa9089d23-eab9-4f6a-a726-f94ee050d419%2F07c8f72a-9ecd-4a15-b206-4a8075531a1e%2F%E5%B7%A5%E4%BD%9C%E5%8D%80%E5%9F%9F_24x.png/size/w=960?exp=1770864125&sig=eZdOxH4qvWImzAPolELDaDJPHVpcmV4a4j-mk6hHXPY&id=302e4b83-246f-8015-b19b-fa79f2df7909&table=block&userId=f75e662a-7c83-4d90-acd1-5029177eca6c" 
-                        alt="訂做流程圖"
-                        className="w-full h-auto rounded-lg object-contain"
-                    />
+                <div className="bg-white p-6 rounded-3xl border-2 border-stone-100 shadow-sm">
+                    <div className="flex flex-col items-center relative space-y-2">
+                        
+                        {/* Step 1 */}
+                        <div className="w-full flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10">
+                            <div className="w-32 h-20 shrink-0 flex items-center justify-center bg-[#e8ede8] border-2 border-[#dce2dc] rounded-lg shadow-sm">
+                                <span className="text-lg font-bold text-[#5a7a5d] tracking-widest">內容討論</span>
+                            </div>
+                            <div className="flex-1 md:mt-2 text-sm text-stone-600 font-medium bg-stone-50 p-3 rounded-xl border border-stone-100 w-full md:w-auto">
+                                <p className="font-bold text-[#6F8F72] mb-1">請一定一定要做到討論部分！</p>
+                                <p>流麻有很多可動項目：尺寸形狀、閃粉顏色、是否要漸層、亮片元素、雙層單層、紙膠裝飾、特殊閃粉裝飾......</p>
+                            </div>
+                        </div>
+                        
+                        <div className="w-full flex justify-center md:justify-start -my-2 pb-2 z-0 relative">
+                            <div className="w-32 flex justify-center">
+                                <ArrowDown className="text-stone-300" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="w-full flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10">
+                            <div className="w-32 h-20 shrink-0 flex items-center justify-center bg-[#e8ede8] border-2 border-[#dce2dc] rounded-lg shadow-sm">
+                                <span className="text-lg font-bold text-[#5a7a5d] tracking-widest">支付訂金</span>
+                            </div>
+                            <div className="flex-1"></div>
+                        </div>
+                        
+                        <div className="w-full flex justify-center md:justify-start -my-2 pb-2 z-0 relative">
+                            <div className="w-32 flex justify-center">
+                                <ArrowDown className="text-stone-300" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="w-full flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10">
+                            <div className="w-32 h-20 shrink-0 flex items-center justify-center bg-[#f0f4f8] border-2 border-[#dde5ed] rounded-lg shadow-sm">
+                                <span className="text-lg font-bold text-[#5a6b7c] text-center leading-tight">排單<br/>確認委託</span>
+                            </div>
+                            <div className="flex-1 md:mt-2 text-sm text-stone-600 font-medium bg-stone-50 p-3 rounded-xl border border-stone-100 w-full md:w-auto">
+                                <p>排到單一個月前都可以變更委託內容，請先做詢問。</p>
+                                <p className="text-red-400 mt-1 text-xs font-bold">※ 若已訂料則無法變更</p>
+                            </div>
+                        </div>
+                        
+                        <div className="w-full flex justify-center md:justify-start -my-2 pb-2 z-0 relative">
+                            <div className="w-32 flex justify-center">
+                                <ArrowDown className="text-stone-300" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Step 4 */}
+                        <div className="w-full flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10">
+                            <div className="w-32 h-20 shrink-0 flex items-center justify-center bg-[#f0f4f8] border-2 border-[#dde5ed] rounded-lg shadow-sm">
+                                <span className="text-lg font-bold text-[#5a6b7c] tracking-widest">開始製作</span>
+                            </div>
+                            <div className="flex-1"></div>
+                        </div>
+                        
+                        <div className="w-full flex justify-center md:justify-start -my-2 pb-2 z-0 relative">
+                            <div className="w-32 flex justify-center">
+                                <ArrowDown className="text-stone-300" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Step 5 */}
+                        <div className="w-full flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10">
+                            <div className="w-32 h-20 shrink-0 flex items-center justify-center bg-[#fdf2f2] border-2 border-[#f5e1e1] rounded-lg shadow-sm">
+                                <span className="text-lg font-bold text-[#8a6a6a] tracking-widest">製作完成</span>
+                            </div>
+                            <div className="flex-1"></div>
+                        </div>
+                        
+                        <div className="w-full flex justify-center md:justify-start -my-2 pb-2 z-0 relative">
+                            <div className="w-32 flex justify-center">
+                                <ArrowDown className="text-stone-300" size={24} />
+                            </div>
+                        </div>
+
+                        {/* Step 6 */}
+                        <div className="w-full flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10">
+                            <div className="w-32 h-20 shrink-0 flex items-center justify-center bg-[#fdf2f2] border-2 border-[#f5e1e1] rounded-lg shadow-sm">
+                                <span className="text-lg font-bold text-[#8a6a6a] tracking-widest">貨到付款</span>
+                            </div>
+                            <div className="flex-1"></div>
+                        </div>
+
+                    </div>
                 </div>
-                <p className="text-center text-xs text-stone-400 mt-4 font-medium">請詳閱上方流程圖，了解我們的訂製步驟。</p>
+                <p className="text-center text-xs text-stone-400 mt-4 font-medium">請詳閱上方流程，確保您了解每一個步驟。</p>
             </div>
         )}
 
@@ -241,7 +337,7 @@ export const CommissionForm: React.FC<CommissionFormProps> = ({ onNavigateHome, 
                 <p className="text-stone-500 mb-6 text-sm font-medium">請先選擇形狀分類，再點選您想訂製的詳細規格。</p>
                 
                 <div className="flex flex-wrap gap-3 mb-6">
-                    {Object.keys(productOptions).map(category => (
+                    {displayCategories.map(category => (
                         <button 
                             key={category} 
                             onClick={() => handleCategoryClick(category)}

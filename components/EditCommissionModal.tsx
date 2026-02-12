@@ -10,13 +10,14 @@ interface EditCommissionModalProps {
 }
 
 export const EditCommissionModal: React.FC<EditCommissionModalProps> = ({ isOpen, onClose, onSave, commission }) => {
-  const [formData, setFormData] = useState<{ price: number; description: string }>({ price: 0, description: '' });
+  const [formData, setFormData] = useState<{ price: number; description: string; contact: string }>({ price: 0, description: '', contact: '' });
 
   useEffect(() => {
     if (commission) {
       setFormData({
         price: commission.price,
         description: commission.description,
+        contact: commission.contact || '',
       });
     }
   }, [commission]);
@@ -61,6 +62,19 @@ export const EditCommissionModal: React.FC<EditCommissionModalProps> = ({ isOpen
                 <p className="text-xs text-stone-400 font-bold mt-2">項目</p>
                 <p className="font-bold text-stone-700">{commission.title}</p>
             </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 mb-2 ml-1">聯絡方式 (FB/IG/Line)</label>
+            <input 
+              name="contact"
+              type="text" 
+              className="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm text-stone-700 focus:ring-4 focus:ring-[#6F8F72]/10 focus:border-[#6F8F72] focus:outline-none font-medium transition-all"
+              value={formData.contact}
+              onChange={handleChange}
+              placeholder="例如: line:123456"
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-stone-500 mb-2 ml-1">價格 (NTD)</label>
             <input 

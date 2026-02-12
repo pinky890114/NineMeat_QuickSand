@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Commission, CommissionStatus, Product, ProductOptions } from '../types';
 import { Plus, X, Shapes, Circle, Square, RectangleHorizontal, Award, Layers } from 'lucide-react';
 import { AddonSelectionModal } from './AddonSelectionModal';
+import { CATEGORY_ORDER } from '../constants';
 
 interface AddCommissionModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface AddCommissionModalProps {
 
 const initialFormData = {
     clientName: '',
+    contact: '',
     title: '',
     description: '',
     type: '流麻吊飾' as Commission['type'],
@@ -31,7 +33,13 @@ const categoryIcons = {
 
 export const AddCommissionModal: React.FC<AddCommissionModalProps> = ({ isOpen, onClose, onAdd, productOptions }) => {
   const [formData, setFormData] = useState<Omit<Commission, 'id' | 'dateAdded' | 'lastUpdated' | 'artistId' | 'thumbnailUrl'>>(initialFormData);
-  const [activeCategory, setActiveCategory] = useState<string>(Object.keys(productOptions)[0]);
+  
+  // Use CATEGORY_ORDER to determine the first active category if available
+  const [activeCategory, setActiveCategory] = useState<string>(() => {
+    const firstAvailable = CATEGORY_ORDER.find(cat => productOptions[cat]);
+    return firstAvailable || Object.keys(productOptions)[0] || '';
+  });
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
@@ -42,7 +50,9 @@ export const AddCommissionModal: React.FC<AddCommissionModalProps> = ({ isOpen, 
       setFormData(initialFormData); // Reset form when modal opens
       setSelectedProduct(null);
       setSelectedAddons([]);
-      setActiveCategory(Object.keys(productOptions)[0]);
+      
+      const firstAvailable = CATEGORY_ORDER.find(cat => productOptions[cat]);
+      setActiveCategory(firstAvailable || Object.keys(productOptions)[0] || '');
     }
   }, [isOpen, productOptions]);
 
@@ -104,6 +114,10 @@ export const AddCommissionModal: React.FC<AddCommissionModalProps> = ({ isOpen, 
     onClose();
   };
 
+  // Prepare categories to display based on fixed order
+  const displayCategories = CATEGORY_ORDER.filter(cat => productOptions[cat])
+    .concat(Object.keys(productOptions).filter(k => !CATEGORY_ORDER.includes(k)));
+
   return (
     <>
     <div 
@@ -136,7 +150,7 @@ export const AddCommissionModal: React.FC<AddCommissionModalProps> = ({ isOpen, 
              <label className="block text-xs font-bold text-stone-500 mb-3 ml-1">快速選擇規格 (選填)</label>
              <div className="bg-stone-50 p-3 rounded-2xl border-2 border-stone-100">
                 <div className="flex flex-wrap gap-2 mb-3">
-                    {Object.keys(productOptions).map(category => (
+                    {displayCategories.map(category => (
                         <button 
                             type="button"
                             key={category} 
@@ -185,6 +199,17 @@ export const AddCommissionModal: React.FC<AddCommissionModalProps> = ({ isOpen, 
               value={formData.clientName}
               onChange={e => setFormData({...formData, clientName: e.target.value})}
               placeholder="例如: ArtLover99"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-500 mb-2 ml-1">聯絡方式 (FB/IG/Line)</label>
+            <input 
+              type="text" 
+              className="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl px-4 py-3 text-sm text-stone-700 focus:ring-4 focus:ring-[#6F8F72]/10 focus:border-[#6F8F72] focus:outline-none font-medium transition-all"
+              value={formData.contact}
+              onChange={e => setFormData({...formData, contact: e.target.value})}
+              placeholder="例如: line:123456"
             />
           </div>
 

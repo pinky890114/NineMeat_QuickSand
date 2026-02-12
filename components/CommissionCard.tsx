@@ -79,10 +79,17 @@ export const CommissionCard: React.FC<CommissionCardProps> = ({
                   <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${getStatusColor(commission.status)}`}>
                     {commission.status}
                   </span>
-                  <p className="text-[#6F8F72] text-sm font-bold tracking-wide flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#6F8F72]"></span>
-                    {commission.clientName}
-                  </p>
+                  <div className="flex flex-col">
+                    <p className="text-[#6F8F72] text-sm font-bold tracking-wide flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#6F8F72]"></span>
+                        {commission.clientName}
+                    </p>
+                    {isAdmin && commission.contact && (
+                        <p className="text-[10px] text-stone-400 font-bold ml-2.5">
+                            {commission.contact}
+                        </p>
+                    )}
+                  </div>
               </div>
               <h3 className="text-xl font-bold text-stone-700">{commission.title}</h3>
             </div>
