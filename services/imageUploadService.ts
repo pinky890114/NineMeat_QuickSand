@@ -90,7 +90,11 @@ export const uploadImage = async (file: File): Promise<string> => {
         throw new Error("權限不足：請檢查 Firebase Storage Rules。");
     } else if (error.code === 'storage/object-not-found') {
         throw new Error("Bucket 設定錯誤或找不到檔案。");
-    } 
+    } else if (error.code === 'storage/retry-limit-exceeded') {
+        throw new Error("上傳逾時：請檢查網路，或確認 Firebase Storage 是否已設定 CORS (常見原因)。");
+    } else if (error.code === 'storage/canceled') {
+        throw new Error("上傳已取消。");
+    }
     
     if (error.message && (error.message.includes('network') || error.message.includes('CORS'))) {
         throw new Error("連線失敗 (CORS)：Bucket 可能尚未建立或 CORS 未設定。");

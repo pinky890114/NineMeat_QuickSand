@@ -25,11 +25,17 @@ export const useProductStore = () => {
                     try {
                         await setDoc(docRef, initialProducts);
                     } catch (error) {
-                        console.error("Error setting initial options:", error);
+                        // 這裡通常是因為還沒登入或權限問題，先忽略，使用預設值
+                        console.warn("Using default products (Pending specific permissions or creation).");
                     }
                 }
-            } catch (error) {
-                console.error("Failed to init product data:", error);
+            } catch (error: any) {
+                // 這裡捕捉 "Client is offline" 或 "Backend didn't respond"
+                if (error.code === 'unavailable' || error.message.includes('offline')) {
+                    console.warn("⚠️ Firestore is offline or unreachable. Using local mock data.");
+                } else {
+                    console.warn("Failed to init product data (using defaults):", error.message);
+                }
                 setProductOptions(initialProducts);
                 setIsLoaded(true);
             }
@@ -42,15 +48,14 @@ export const useProductStore = () => {
             const firestoreData = docSnap.data() as ProductOptions;
             // Merge initialProducts with firestoreData to ensure new categories (keys) 
             // from initialProducts appear even if they don't exist in the DB yet.
-            // Using spread order: initialProducts first, then firestoreData overwrites matching keys.
-            // This preserves existing DB edits but adds missing new categories.
             setProductOptions({ ...initialProducts, ...firestoreData });
           } else {
             setProductOptions(initialProducts);
           }
           setIsLoaded(true);
         }, (error) => {
-            console.error("Error fetching options:", error);
+            // 監聽失敗時也切換回預設值
+            console.warn("Firestore snapshot listener paused (Offline/Error). Using local data.");
             setProductOptions(initialProducts);
             setIsLoaded(true);
         });
@@ -75,6 +80,8 @@ export const useProductStore = () => {
         let message = `更新失敗：${error.message}`;
         if (error.code === 'permission-denied') {
             message = "⚠️ 權限不足 (Permission Denied)\n\n請至 Firebase Console > Firestore Database > Rules 設定規則。";
+        } else if (error.code === 'unavailable') {
+            message = "⚠️ 無法連線到伺服器 (Offline)\n\n請檢查您的網路連線，或確認 Firestore 資料庫是否已建立。";
         }
         
         alert(message);

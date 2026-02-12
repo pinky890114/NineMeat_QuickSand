@@ -90,7 +90,7 @@ export const ProductManagerModal: React.FC<ProductManagerModalProps> = ({ isOpen
   // Extract all unique addons across all products to build the suggestion list
   const presetAddons = useMemo(() => {
     const map = new Map<string, number>();
-    Object.values(internalOptions).flat().forEach(p => {
+    Object.values(internalOptions).flat().forEach((p: Product) => {
         p.addons?.forEach(a => {
             // Store the most recent valid price found for this addon name
             if(a.price > 0 || !map.has(a.name)) {
